@@ -1,0 +1,8 @@
+
+acdc_logdir
+preproc_data
+src
+.idea
+*.pyc
+.vscode/
+data/
