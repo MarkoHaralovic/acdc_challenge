@@ -1,0 +1,3 @@
+[submodule "acdc_segmenter"]
+	path = acdc_segmenter
+	url = https://github.com/baumgach/acdc_segmenter.git
