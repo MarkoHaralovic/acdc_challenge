@@ -16,6 +16,7 @@ import model as model
 from background_generator import BackgroundGenerator
 import config.system as sys_config
 import acdc_data
+from tqdm import tqdm
 
 ### EXPERIMENT CONFIG FILE #############################################################
 # Set the config file of the experiment you want to run here:
@@ -209,15 +210,18 @@ def run_training(continue_run):
         loss_gradient = np.inf
         best_dice = 0
 
-        for epoch in range(exp_config.max_epochs):
+        for epoch in tqdm(range(exp_config.max_epochs), desc="Epochs", unit="epoch",total=exp_config.max_epochs):
 
             logging.info('EPOCH %d' % epoch)
 
 
-            for batch in iterate_minibatches(images_train,
+            for batch in tqdm(iterate_minibatches(images_train,
                                              labels_train,
                                              batch_size=exp_config.batch_size,
-                                             augment_batch=exp_config.augment_batch):
+                                             augment_batch=exp_config.augment_batch),
+                             desc="Batches",
+                             unit="batch",
+                             total=len(images_train) // exp_config.batch_size):
 
             # You can run this loop with the BACKGROUND GENERATOR, which will lead to some improvements in the
             # training speed. However, be aware that currently an exception inside this loop may not be caught.

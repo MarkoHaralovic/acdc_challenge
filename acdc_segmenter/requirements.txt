@@ -13,7 +13,7 @@ Keras-Preprocessing==1.0.9
 kiwisolver==1.0.1
 Markdown==3.0.1
 matplotlib==3.0.2
--e git+https://github.com/lmkoch/medpy/@b06b6decf41c63489e746f6a83e8fa5ff509adfa#egg=MedPy
+# -e git+https://github.com/lmkoch/medpy/@b06b6decf41c63489e746f6a83e8fa5ff509adfa#egg=MedPy
 networkx==2.2
 nibabel==2.3.3
 numpy==1.16.1
@@ -33,3 +33,4 @@ six==1.12.0
 termcolor==1.1.0
 toolz==0.9.0
 Werkzeug==0.14.1
+tqdm
