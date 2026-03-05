@@ -20,7 +20,7 @@ Navigate to the segmenter directory and install the required packages.
 cd acdc_segmenter
 pip install -r requirements.txt
 pip install git+https://github.com/lmkoch/medpy/@b06b6decf41c63489e746f6a83e8fa5ff509adfa#egg=MedPy
-pip install tensorflow-gpu==1.12
+pip install tensorflow-gpu==1.13.1
 ```
 
 ## 3. Download the Dataset
