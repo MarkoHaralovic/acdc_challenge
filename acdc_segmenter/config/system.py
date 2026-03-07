@@ -12,7 +12,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 # Full paths are required because otherwise the code will not know where to look
 # when it is executed on one of the clusters.
 
-at_biwi = False  # Are you running this code from the ETH Computer Vision Lab (Biwi)?
 project_root = '/home/s3758869/acdc_challenge/acdc_segmenter'
 data_root = '/home/s3758869/acdc_challenge/database/training'
 test_data_root = '/home/s3758869/acdc_challenge/database/testing'
@@ -26,12 +25,11 @@ preproc_folder = os.path.join(project_root,'preproc_data')
 
 def setup_GPU_environment():
 
-    if at_biwi:
-        hostname = socket.gethostname()
-        print('Running on %s' % hostname)
-        if not hostname in local_hostnames:
-            logging.info('Setting CUDA_VISIBLE_DEVICES variable...')
-            os.environ["CUDA_VISIBLE_DEVICES"] = os.environ['SGE_GPU']
-            logging.info('SGE_GPU is %s' % os.environ['SGE_GPU'])
-    else:
-        logging.warning('!! No GPU setup defined. Perhaps you need to set CUDA_VISIBLE_DEVICES etc...?')
+    if socket.gethostname() not in local_hostnames:
+        if 'CUDA_VISIBLE_DEVICES' not in os.environ:
+            logging.warning('We are on a cluster but CUDA_VISIBLE_DEVICES is not set. Setting it to the default GPU.')
+            os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+            os.environ['SGE_GPU'] = os.environ['CUDA_VISIBLE_DEVICES']
+        else:
+            logging.info('Setting SGE_GPU environment variable to {}'.format(os.environ['CUDA_VISIBLE_DEVICES']))
+            os.environ['SGE_GPU'] = os.environ['CUDA_VISIBLE_DEVICES']
