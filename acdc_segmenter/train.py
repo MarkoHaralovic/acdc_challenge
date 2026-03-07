@@ -502,14 +502,14 @@ def main(args, exp_config, log_dir):
 if __name__ == '__main__':    
     parser = ArgumentParser(description="CLI arguments for training script")
     parser.add_argument("--config", type=str, required=True, default="unet2D_bn_xent.py")
-
+    parser.add_argument("--log-dir", type=str, default=None, help="Override the default log directory defined in system.py")
     args = parser.parse_args()
 
     exp_config = __import__('experiments.' + args.config[:-3], fromlist=[''])
 
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
-    log_dir = os.path.join(sys_config.log_root, exp_config.experiment_name)
+    log_dir = args.log_dir if args.log_dir is not None else os.path.join(sys_config.log_root, exp_config.experiment_name)
 
     # Set SGE_GPU environment variable if we are not on the local host
     sys_config.setup_GPU_environment()

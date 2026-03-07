@@ -78,3 +78,18 @@ Looking at each, these are important parameters we can ablate:
 - `do_rotations`: rotation augmentation
 - `do_scaleaug`: scale augmentation
 - `do_fliplr`: horizontal flip
+
+## How to train a model
+I am using HPC from UTwente, with commands being saved under slurm_scripts. We just defined how to use the experiment config, so to run the code locally or in the notebook use:
+
+```bash
+cd acdc_segmenter # if not already in that repo
+python train.py --config unet2D_bn_xent.py # this is the baseline, any config name under acdc_segmenter/experiments can be sent as input argument
+```
+Log dir is defined in acdc_segmenter/config/system.py. To override it, simply pass CLI argument log-dir with desired output location where the training artifacts (logs, model checkpoints, etc.) will be saved. CLI argument overrides the default log dir.
+
+Example:
+```bash
+cd acdc_segmenter # if not already in that repo
+python train.py --config unet2D_bn_xent.py --log-dir /path/to/desired/log/dir
+```
