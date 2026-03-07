@@ -9,7 +9,7 @@ The `acdc_segmenter` requires **Python >= 2.7 and <= 3.7**.
 Create and activate a virtual environment:
 
 ```bash
-conda create -n acdc_venv37
+conda create -n acdc_venv37 python=3.7
 conda activate acdc_venv37
 pip install --upgrade pip
 ```
