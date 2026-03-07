@@ -17,35 +17,9 @@ from background_generator import BackgroundGenerator
 import config.system as sys_config
 import acdc_data
 from tqdm import tqdm
+from argparse import ArgumentParser
 
-### EXPERIMENT CONFIG FILE #############################################################
-# Set the config file of the experiment you want to run here:
-
-# from experiments import FCN8_bn_wxent as exp_config
-# from experiments import unet2D_bn_modified_dice as exp_config
-from experiments import unet2D_bn_modified_wxent as exp_config
-# from experiments import unet2D_bn_modified_xent as exp_config
-# from experiments import unet2D_bn_wxent as exp_config
-# from experiments import unet3D_bn_modified_wxent as exp_config
-# from experiments import unet2D_bn_wxentropy_bs5 as exp_config
-
-########################################################################################
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
-
-log_dir = os.path.join(sys_config.log_root, exp_config.experiment_name)
-
-# Set SGE_GPU environment variable if we are not on the local host
-sys_config.setup_GPU_environment()
-
-try:
-    import cv2
-except:
-    logging.warning('Could not find cv2. If you want to use augmentation '
-                    'function you need to setup OpenCV.')
-
-
-def run_training(continue_run):
+def run_training(continue_run, exp_config, log_dir):
 
     logging.info('EXPERIMENT NAME: %s' % exp_config.experiment_name)
 
@@ -512,7 +486,7 @@ def iterate_minibatches(images, labels, batch_size, augment_batch=False):
         yield X, y
 
 
-def main():
+def main(args, exp_config, log_dir):
 
     continue_run = True
     if not tf.gfile.Exists(log_dir):
@@ -522,14 +496,28 @@ def main():
     # Copy experiment config file
     shutil.copy(exp_config.__file__, log_dir)
 
-    run_training(continue_run)
+    run_training(continue_run, exp_config, log_dir)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':    
+    parser = ArgumentParser(description="CLI arguments for training script")
+    parser.add_argument("--config", type=str, required=True, default="unet2D_bn_xent.py")
 
-    # parser = argparse.ArgumentParser(
-    #     description="Train a neural network.")
-    # parser.add_argument("CONFIG_PATH", type=str, help="Path to config file (assuming you are in the working directory)")
-    # args = parser.parse_args()
+    args = parser.parse_args()
 
-    main()
+    exp_config = __import__('experiments.' + args.config[:-3], fromlist=[''])
+
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+
+    log_dir = os.path.join(sys_config.log_root, exp_config.experiment_name)
+
+    # Set SGE_GPU environment variable if we are not on the local host
+    sys_config.setup_GPU_environment()
+
+    try:
+        import cv2
+    except:
+        logging.warning('Could not find cv2. If you want to use augmentation '
+                        'function you need to setup OpenCV.')
+
+    main(args, exp_config, log_dir)
