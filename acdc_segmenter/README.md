@@ -26,50 +26,11 @@ Pretrained weights for the best performing method can be found here: https://git
 
 It was not possible to upload all experiments due to size limits. However, the pretrained weights for the other experiments can be requested via email from baumgartner@vision.ee.ethz.ch. 
 
-## Requirements 
-
-- Python 3.5 (tested with Python 3.5.3)
-- Tensorflow (tested with tensorflow 1.12)
-- The package requirements are given in `requirements.txt`
-
-## Getting the code
-
-Clone the repository by typing
-
-``` git clone https://github.com/baumgach/acdc_segmenter.git ```
-
-
-## Installing required Python packages
-
-Create an environment with Python 3.5. If you use virutalenv it 
-might be necessary to first upgrade pip (``` pip install --upgrade pip ```).
-
-Next, install the required packages listed in the `requirements.txt` file:
-
-``` pip install -r requirements.txt ```
-
-The tensorflow packages are not part of the requirements file because you may want to toggle the CPU and GPU version. For the GPU version type
-
-``` pip install tensorflow-gpu==1.12```
-
-If you want to use the CPU version use the following command. 
-
-``` pip install tensorflow==1.12```
-
-If you want to go back and forth between GPU and CPU it probably makes sense to make two separate environments which are identical except
-for the tensorflow version. 
-
-## Download the ACDC challenge data
-
-If you don't have access to the data already you can sign up and download it from this [webpage](http://acdc.creatis.insa-lyon.fr/#challenges).
-
-The cardiac segmentation challenge and the data is described in detail [here](https://www.creatis.insa-lyon.fr/Challenge/acdc/index.html).
-
-
 ## Running the code locally
 
 Open the `config/system.py` and edit all the paths there to match your system.
 
+### Training 
 Next, open `train.py` and, at the top of the file, select the experiment you want to run (or simply use the default).
 
 To train a model simpy run:
@@ -86,20 +47,10 @@ activated
 
 Then, navigate to [localhost:8008](localhost:8008) in your browser to open tensorboard.
 
+### Evaluation 
 At any point during the training, or after, you can evaluate your model by typing the following:
 
 ``` python evaluate acdc_logdir/unet3D_bn_modified_wxent ```
 
 where you have to adapt the line to match your experiment. Note that, the path must be given relative to your
 working directory. Giving the full path will not work.
-
-
-## Running the code on the ETH CVL (Biwi) GPU infrastructure:
-
-Instructions for setting everything up to run this code on the Biwi GPU infrastructure can be found [here](https://git.ee.ethz.ch/baumgach/biwi_tensorflow_setup_instructions).
-
-Don't forget to change the `at_biwi` option in `config/system.py`! 
-
-## Known issues
-
-None at the moment

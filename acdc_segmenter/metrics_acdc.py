@@ -328,9 +328,21 @@ def main(path_gt, path_pred, eval_dir):
 
         logging.info('------------Average Dice Figures----------')
         logging.info('Dice 1 (LV): %f' % np.mean(df.loc[df['struc'] == 'LV']['dice']))
-        logging.info('Dice 2 (RC): %f' % np.mean(df.loc[df['struc'] == 'RV']['dice']))
+        logging.info('Dice 2 (RV): %f' % np.mean(df.loc[df['struc'] == 'RV']['dice']))
         logging.info('Dice 3 (Myo): %f' % np.mean(df.loc[df['struc'] == 'Myo']['dice']))
-        logging.info('Mean dice: %f' % np.mean(np.mean(df['dice'])))
+        logging.info('Mean dice: %f' % np.mean(df['dice']))
+        logging.info('------------------------------------------')
+        logging.info('--------Average Hausdorff Distance--------')
+        logging.info('HD 1 (LV): %f' % np.mean(df.loc[df['struc'] == 'LV']['hd']))
+        logging.info('HD 2 (RV): %f' % np.mean(df.loc[df['struc'] == 'RV']['hd']))
+        logging.info('HD 3 (Myo): %f' % np.mean(df.loc[df['struc'] == 'Myo']['hd']))
+        logging.info('Mean HD: %f' % np.mean(df['hd']))
+        logging.info('------------------------------------------')
+        logging.info('-----------Average ASSD Figures------------')
+        logging.info('ASSD 1 (LV): %f' % np.mean(df.loc[df['struc'] == 'LV']['assd']))
+        logging.info('ASSD 2 (RV): %f' % np.mean(df.loc[df['struc'] == 'RV']['assd']))
+        logging.info('ASSD 3 (Myo): %f' % np.mean(df.loc[df['struc'] == 'Myo']['assd']))
+        logging.info('Mean ASSD: %f' % np.mean(df['assd']))
         logging.info('------------------------------------------')
 
     else:

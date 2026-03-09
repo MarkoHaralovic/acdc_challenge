@@ -18,6 +18,7 @@ import config.system as sys_config
 import model as model
 import utils
 import image_utils
+from tqdm import tqdm
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
@@ -58,7 +59,7 @@ def score_data(input_folder, output_folder, model_path, exp_config, do_postproce
         total_time = 0
         total_volumes = 0
 
-        for folder in os.listdir(input_folder):
+        for folder in tqdm(os.listdir(input_folder), desc='Evaluating patients', unit='patient'):
 
             folder_path = os.path.join(input_folder, folder)
 
