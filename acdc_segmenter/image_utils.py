@@ -5,6 +5,7 @@
 import numpy as np
 from skimage import measure
 import logging
+from scipy.ndimage import binary_erosion
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
@@ -89,3 +90,27 @@ def keep_largest_connected_components(mask):
         out_img[blobs == largest_blob_label] = struc_id
 
     return out_img
+
+
+def get_boundary_map(label_batch, nlabels):
+    '''
+    label_batch: [B, H, W] integer mask
+    returns: [B, H, W] binary boundary mask
+    '''
+    boundary_batch = np.zeros_like(label_batch, dtype=np.uint8)
+
+    for b in range(label_batch.shape[0]):
+        lbl = label_batch[b]
+        boundary = np.zeros_like(lbl, dtype=np.uint8)
+
+        for c in range(1, nlabels): 
+            class_mask = (lbl == c)
+
+            if np.any(class_mask):
+                eroded = binary_erosion(class_mask)
+                class_boundary = class_mask ^ eroded
+                boundary = np.logical_or(boundary, class_boundary)
+
+        boundary_batch[b] = boundary.astype(np.uint8)
+
+    return boundary_batch

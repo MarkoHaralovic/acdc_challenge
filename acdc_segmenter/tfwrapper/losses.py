@@ -5,6 +5,15 @@
 import tensorflow as tf
 import numpy as np
 
+# Suggested normalized boundary-aware weighting:
+# Replace the final reduction in cross_entropy_boundary_aware_loss(...) with:
+#
+# weighted_loss = loss_map * total_weight
+# loss = tf.reduce_sum(weighted_loss) / (tf.reduce_sum(total_weight) + 1e-8)
+#
+# That keeps the loss magnitude comparable across runs with different
+# boundary_weight values and different fractions of boundary pixels.
+
 def per_structure_dice(logits, labels, epsilon=1e-10, sum_over_batches=False, use_hard_pred=True):
     '''
     Dice coefficient per subject per label
@@ -81,6 +90,7 @@ def pixel_wise_cross_entropy_loss(logits, labels):
     return loss
 
 
+
 def pixel_wise_cross_entropy_loss_weighted(logits, labels, class_weights):
     '''
     Weighted cross entropy loss, with a weight per class
@@ -108,3 +118,88 @@ def pixel_wise_cross_entropy_loss_weighted(logits, labels, class_weights):
 
     return loss
 
+
+def focal_loss(logits, labels, gamma=2.0, alpha=None, epsilon=1e-8):
+    '''
+    Formula (multi-class, one-hot labels):
+        FL(p_t) = - alpha_t * (1 - p_t)^gamma * log(p_t)
+
+    :param logits: Network logits
+    :param labels: One-hot ground truth
+    :param gamma: Focusing parameter
+    :param alpha: None, or list/array of class weights of length n_class
+    :param epsilon: Constant for numerical stability
+    :return: scalar focal loss
+    '''
+
+    n_class = logits.get_shape().as_list()[-1]
+    
+    flat_logits = tf.reshape(logits, [-1, n_class])
+    flat_labels = tf.reshape(labels, [-1, n_class])
+
+    probs = tf.nn.softmax(flat_logits)
+
+    p_t = tf.reduce_sum(probs * flat_labels, axis=1)
+    p_t = tf.clip_by_value(p_t, epsilon, 1.0 - epsilon)
+
+
+    focal_weight = tf.pow(1 - p_t, gamma)
+    ce_loss = - tf.log(p_t)
+
+    if alpha is not None:
+        alpha = tf.constant(alpha, dtype=tf.float32)
+        alpha_t = tf.reduce_sum(alpha * flat_labels, axis=1)
+        loss_map = alpha_t * focal_weight * ce_loss
+    else:
+        loss_map = focal_weight * ce_loss
+    
+    loss = tf.reduce_mean(loss_map)
+    return loss
+
+def cross_entropy_boundary_aware_loss(logits,labels,boundary_maps,class_weights=None,boundary_weight=4.0):
+    '''
+    Boundary-aware multi-class cross-entropy loss.
+
+    For each pixel:
+        loss = CE(logits, labels) * class_weight * boundary_factor
+
+    where:
+        boundary_factor = 1 + boundary_weight * boundary_map
+
+    :param logits: Network output before softmax, shape [..., n_class]
+    :param labels: One-hot ground truth labels, shape [..., n_class]
+    :param boundary_maps: Binary boundary maps, shape [...] or [..., 1]
+    :param class_weights: Optional list of class weights of length n_class
+    :param boundary_weight: Extra weight given to boundary pixels
+    :return: scalar loss
+    '''
+    n_class = logits.get_shape().as_list()[-1]
+
+    flat_logits = tf.reshape(logits, [-1, n_class])
+    flat_labels = tf.reshape(labels, [-1, n_class])
+
+    flat_boundary = tf.reshape(boundary_maps, [-1])
+    flat_boundary = tf.cast(flat_boundary, tf.float32)
+
+    # Standard cross-entropy per pixel
+    loss_map = tf.nn.softmax_cross_entropy_with_logits_v2(
+        logits=flat_logits,
+        labels=flat_labels
+    )
+
+    # Boundary weighting:
+    # boundary=0 -> weight 1
+    # boundary=1 -> weight 1 + boundary_weight
+    boundary_factor = 1.0 + boundary_weight * flat_boundary
+
+    total_weight = boundary_factor
+
+    if class_weights is not None:
+        class_weights = tf.constant(np.array(class_weights, dtype=np.float32))
+        class_weight_map = tf.reduce_sum(flat_labels * class_weights, axis=1)
+        total_weight = total_weight * class_weight_map
+
+    weighted_loss = loss_map * total_weight
+    loss = tf.reduce_mean(weighted_loss)
+
+    return loss

@@ -84,6 +84,22 @@ def run_training(continue_run, exp_config, log_dir):
 
     with tf.Graph().as_default():
 
+        # Suggested simpler graph setup:
+        # return_boundary_maps = (exp_config.loss_type == 'crossentropy_boundary_aware')
+        #
+        # images_pl = tf.placeholder(...)
+        # labels_pl = tf.placeholder(...)
+        # boundary_maps_pl = None
+        # if return_boundary_maps:
+        #     boundary_maps_pl = tf.placeholder(
+        #         tf.float32,
+        #         shape=mask_tensor_shape,
+        #         name='boundary_maps'
+        #     )
+        #
+        # With model.loss(..., boundary_maps=None by default), non-boundary runs
+        # can skip boundary_maps_pl entirely.
+
         # Generate placeholders for the images and labels.
 
         image_tensor_shape = [exp_config.batch_size] + list(exp_config.image_size) + [1]
@@ -91,6 +107,7 @@ def run_training(continue_run, exp_config, log_dir):
 
         images_pl = tf.placeholder(tf.float32, shape=image_tensor_shape, name='images')
         labels_pl = tf.placeholder(tf.uint8, shape=mask_tensor_shape, name='labels')
+        boundary_maps_pl = tf.placeholder(tf.float32, shape=mask_tensor_shape, name='boundary_maps')
 
         learning_rate_pl = tf.placeholder(tf.float32, shape=[])
         training_pl = tf.placeholder(tf.bool, shape=[])
@@ -101,11 +118,14 @@ def run_training(continue_run, exp_config, log_dir):
         logits = model.inference(images_pl, exp_config, training=training_pl)
 
         # Add to the Graph the Ops for loss calculation.
-        [loss, _, weights_norm] = model.loss(logits,
-                                             labels_pl,
-                                             nlabels=exp_config.nlabels,
-                                             loss_type=exp_config.loss_type,
-                                             weight_decay=exp_config.weight_decay)  # second output is unregularised loss
+        [loss, _, weights_norm] = model.loss(
+            logits,
+            labels_pl,
+            nlabels=exp_config.nlabels,
+            loss_type=exp_config.loss_type,
+            weight_decay=exp_config.weight_decay,
+            boundary_maps=boundary_maps_pl
+        ) # second output is unregularised loss
 
         tf.summary.scalar('loss', loss)
         tf.summary.scalar('weights_norm_term', weights_norm)
@@ -120,6 +140,7 @@ def run_training(continue_run, exp_config, log_dir):
         eval_loss = model.evaluation(logits,
                                      labels_pl,
                                      images_pl,
+                                     boundary_maps=boundary_maps_pl,
                                      nlabels=exp_config.nlabels,
                                      loss_type=exp_config.loss_type)
 
@@ -184,6 +205,7 @@ def run_training(continue_run, exp_config, log_dir):
         loss_gradient = np.inf
         best_dice = 0
 
+        return_boundary_maps = exp_config.loss_type == 'crossentropy_boundary_aware'
         for epoch in tqdm(range(exp_config.max_epochs), desc="Epochs", unit="epoch",total=exp_config.max_epochs):
 
             logging.info('EPOCH %d' % epoch)
@@ -230,6 +252,9 @@ def run_training(continue_run, exp_config, log_dir):
                     training_pl: True
                 }
 
+                if return_boundary_maps:
+                    boundary_maps = image_utils.get_boundary_map(y, exp_config.nlabels).astype(np.float32)
+                    feed_dict[boundary_maps_pl] = boundary_maps
 
                 _, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
 
@@ -252,10 +277,13 @@ def run_training(continue_run, exp_config, log_dir):
                                                        eval_loss,
                                                        images_pl,
                                                        labels_pl,
+                                                       boundary_maps_pl,
                                                        training_pl,
                                                        images_train,
                                                        labels_train,
-                                                       exp_config.batch_size)
+                                                       exp_config.batch_size,
+                                                       return_boundary_maps=return_boundary_maps,
+                                                       nlabels=exp_config.nlabels)
 
                     train_summary_msg = sess.run(train_summary, feed_dict={train_error_: train_loss,
                                                                            train_dice_: train_dice}
@@ -302,10 +330,13 @@ def run_training(continue_run, exp_config, log_dir):
                                                        eval_loss,
                                                        images_pl,
                                                        labels_pl,
+                                                       boundary_maps_pl,
                                                        training_pl,
                                                        images_val,
                                                        labels_val,
-                                                       exp_config.batch_size)
+                                                       exp_config.batch_size,
+                                                       return_boundary_maps=return_boundary_maps,
+                                                       nlabels=exp_config.nlabels)
 
                         val_summary_msg = sess.run(val_summary, feed_dict={val_error_: val_loss, val_dice_: val_dice}
                         )
@@ -334,10 +365,13 @@ def do_eval(sess,
             eval_loss,
             images_placeholder,
             labels_placeholder,
+            boundary_maps_placeholder,
             training_time_placeholder,
             images,
             labels,
-            batch_size):
+            batch_size,
+            return_boundary_maps=False,
+            nlabels=None):
 
     '''
     Function for running the evaluations every X iterations on the training and validation sets. 
@@ -345,10 +379,13 @@ def do_eval(sess,
     :param eval_loss: The placeholder containing the eval loss
     :param images_placeholder: Placeholder for the images
     :param labels_placeholder: Placeholder for the masks
+    :param boundary_maps_placeholder: Placeholder for the boundary maps
     :param training_time_placeholder: Placeholder toggling the training/testing mode. 
     :param images: A numpy array or h5py dataset containing the images
     :param labels: A numpy array or h45py dataset containing the corresponding labels 
     :param batch_size: The batch_size to use. 
+    :param return_boundary_maps: Whether to compute and feed boundary maps.
+    :param nlabels: Number of labels. Required when return_boundary_maps is True.
     :return: The average loss (as defined in the experiment), and the average dice over all `images`. 
     '''
 
@@ -369,6 +406,10 @@ def do_eval(sess,
                       labels_placeholder: y,
                       training_time_placeholder: False}
 
+        if return_boundary_maps:
+            boundary_maps = image_utils.get_boundary_map(y, nlabels).astype(np.float32)
+            feed_dict[boundary_maps_placeholder] = boundary_maps
+            
         closs, cdice = sess.run(eval_loss, feed_dict=feed_dict)
         loss_ii += closs
         dice_ii += cdice
