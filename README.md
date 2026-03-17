@@ -160,7 +160,6 @@ When running the U-Net model with `batch_size = 24`, the GPU will run out of VRA
 batch_size = 16  # Reduced from 24 to prevent OOM
 ```
 
----
 
 ### 2. Running the Training in the Background (`nohup`)
 
@@ -174,7 +173,6 @@ nohup python train.py --config unet2D_bn_xent.py > training_output.log 2>&1 &
 
 * This runs the script in the background, redirects all output to `training_output.log`, and appends the process ID to the log.
 
----
 
 ### 3. Monitoring Training Progress
 
@@ -186,7 +184,6 @@ tail -f training_output.log
 
 *(Press `Ctrl + C` to exit the `tail` command without stopping the training.)*
 
----
 
 ### 4. Monitoring GPU Usage
 
