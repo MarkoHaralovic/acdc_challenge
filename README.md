@@ -145,8 +145,6 @@ The config file defines the model via `model_handle = model_zoo.unet2D_bn`.
 The config file defines the optimizer via `optimizer_handle = tf.train.AdamOptimizer`.
 * *How to find other optimizers:* Because we are using the TF1 compatibility bridge, you can swap this with other standard TF1 optimizers by searching the TensorFlow documentation. For example, you could change it to `tf.train.GradientDescentOptimizer` or `tf.train.RMSPropOptimizer`.
 
-
-
 ---
 
 ## Phase 4: Resource Management & Training
@@ -160,51 +158,42 @@ When running the U-Net model with `batch_size = 24`, the GPU will run out of VRA
 ```python
 # Training settings
 batch_size = 16  # Reduced from 24 to prevent OOM
-
 ```
 
-### 2. Running the Training in the Background (`tmux`)
+---
 
-To prevent the training from aborting when you close your laptop or lose connection to the UT JupyterLab, run the script inside a `tmux` (Terminal Multiplexer) session.
+### 2. Running the Training in the Background (`nohup`)
 
-**Start a background session:**
+To prevent the training from aborting when you close your laptop or lose connection to the UT JupyterLab, run the script using `nohup` (no hangup). This ensures the process continues running even if your terminal session ends.
+
+**Start the training in the background:**
 
 ```bash
-tmux new-session -d -s acdc_training "python train.py --config unet2D_bn_xent.py; bash"
-
+nohup python train.py --config unet2D_bn_xent.py > training_output.log 2>&1 &
 ```
 
-* This creates a detached "virtual screen" named `acdc_training` and runs the script.
+* This runs the script in the background, redirects all output to `training_output.log`, and appends the process ID to the log.
 
-**To view the training progress later:**
+---
 
-The primary way is to attach to the `tmux` session to see the live console output:
+### 3. Monitoring Training Progress
 
-```bash
-tmux attach -t acdc_training
-```
+You can monitor the training progress by checking the log file:
 
-*(To exit the view without stopping the training, press `Ctrl + B`, let go, and then press `D`).*
-
-**Alternative: Tailing a Log File**
-
-You can also redirect the output to a log file. First, modify the startup command:
-```bash
-tmux new-session -d -s acdc_training "python train.py --config unet2D_bn_xent.py > training_output.log 2>&1; bash"
-```
-
-Then, from another terminal, you can monitor the output with `tail`:
 ```bash
 tail -f training_output.log
 ```
 
-### 3. Monitoring GPU Usage
+*(Press `Ctrl + C` to exit the `tail` command without stopping the training.)*
+
+---
+
+### 4. Monitoring GPU Usage
 
 To verify that the GPU is actively processing your data and to monitor VRAM usage, open a terminal and run:
 
 ```bash
 watch -n 1 nvidia-smi
-
 ```
 
 ---
