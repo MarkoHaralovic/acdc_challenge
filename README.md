@@ -239,7 +239,7 @@ To prevent the training from aborting when you close your laptop or lose connect
 **Start a background session:**
 
 ```bash
-tmux new-session -d -s acdc_training "python train.py --config unet2D_bn_xent.py; bash"
+tmux new-session -d -s acdc_training "python train.py --config unet2D_bn_xent.py
 
 ```
 
@@ -259,7 +259,7 @@ tmux attach -t acdc_training
 
 You can also redirect the output to a log file. First, modify the startup command:
 ```bash
-tmux new-session -d -s acdc_training "python train.py --config unet2D_bn_xent.py > training_output.log 2>&1; bash"
+tmux new-session -d -s acdc_training "python train.py --config unet2D_bn_xent.py > training_output.log 2>&1
 ```
 
 Then, from another terminal, you can monitor the output with `tail`:
