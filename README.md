@@ -19,51 +19,6 @@ This guide outlines the exact steps required to run the legacy ACDC Challenge se
 
 ---
 
-## Phase 0: Prerequisites (Code & Data)
-
-Before setting up the environment, you must first download the project codebase and the required ACDC medical imaging dataset.
-
-### 1. Clone the Code Repository
-
-Open a terminal and clone the project repository from GitHub. This will create the main project folder, `acdc_challenge`.
-
-```bash
-# Clone the repository from GitHub
-git clone https://github.com/MarkoHaralovic/acdc_challenge.git
-
-# Navigate into the newly created project directory
-cd acdc_challenge
-```
-
-### 2. Download the ACDC Dataset
-
-The training and testing data is not included in the repository and must be downloaded separately.
-
-1.  **Go to the official ACDC Challenge website to request the data:** https://www.creatis.insa-lyon.fr/Challenge/acdc/databases.html
-2.  **Download the data:** You will need to fill out a short form. You will receive a download link for a file named `database.zip`.
-3.  **Create a data directory:** Inside your cloned `acdc_challenge` project folder, create a new directory named `database`.
-4.  **Unzip and move the data:** Unzip the downloaded `database.zip` file. It will extract into a folder that contains `training` and `testing` sub-folders. Move these (`training` and `testing`) into the `database` directory you created in the previous step.
-
-Your final folder structure must look like this for the scripts to work:
-
-```
-acdc_challenge/
-├── database/
-│   ├── training/
-│   │   ├── patient001/
-│   │   └── ...
-│   └── testing/
-│       ├── patient101/
-│       └── ...
-├── acdc_segmenter/
-│   ├── system.py
-│   └── ...
-├── train.py
-└── ...
-```
-
----
-
 ## Phase 1: Environment Setup & Dependencies
 
 Before installing any packages, we must create an isolated workspace. We use **Conda** for this, which ensures our specific Python version and packages do not interfere with other projects on the server.
@@ -171,50 +126,26 @@ def batch_normalisation_layer(bottom, name, training):
 
 ---
 
-## Phase 3: Configuration (Paths & Hyperparameters)
+## Phase 3: Configuring Your Experiment (The Config File)
 
-Before training, you must configure two key files: `system.py` for file paths and your chosen experiment file (e.g., `unet2D_bn_xent.py`) for model hyperparameters. Both are located in the `acdc_segmenter/` directory.
+The file `unet2D_bn_xent.py` (located in your main project folder `~/Deep_learning_project/acdc_challenge/acdc_segmenter/`) acts as the "control panel" for your experiment. You can duplicate this file to create different experiments.
 
-### 1. Configure System Paths (`system.py`)
+Inside this file, you can tweak various hyperparameters and swap out core components of the training pipeline.
 
-This file tells the training script where to find the project code and the dataset. You must edit it to match your folder structure.
+### How to customize your setup:
 
-1.  **Open the file:** `acdc_segmenter/system.py`
-2.  **Locate the section:** Find the lines under the comment `### SET THESE PATHS MANUALLY ###`.
-3.  **Update the paths:** Change the `project_root`, `data_root`, and `test_data_root` variables to the **full, absolute paths** on your system.
+* **Adjusting Hyperparameters:**
+You can directly change values like `learning_rate = 0.01` to `0.001`, change `loss_type = 'crossentropy'` to `'dice'`, or toggle data augmentations like `do_rotations = True`.
+* **Swapping the Network Architecture:**
+The config file defines the model via `model_handle = model_zoo.unet2D_bn`.
+* *How to find other models:* Open the `model_zoo.py` file in your repository. Look at the functions defined inside (e.g., `unet2D`, `unet3D`). You can change your config to use any of these by updating the handle (e.g., `model_handle = model_zoo.unet2D`).
 
-**Example:** If you cloned the repository into `~/acdc_challenge` as recommended in Phase 0, your paths should look like this:
 
-```python
-# In acdc_segmenter/system.py
-import os
-# ...
-### SET THESE PATHS MANUALLY #####################################################
-# Full paths are required because otherwise the code will not know where to look
-# when it is executed on one of the clusters.
+* **Swapping the Optimizer:**
+The config file defines the optimizer via `optimizer_handle = tf.train.AdamOptimizer`.
+* *How to find other optimizers:* Because we are using the TF1 compatibility bridge, you can swap this with other standard TF1 optimizers by searching the TensorFlow documentation. For example, you could change it to `tf.train.GradientDescentOptimizer` or `tf.train.RMSPropOptimizer`.
 
-project_root = os.path.expanduser('~/acdc_challenge/acdc_segmenter')
-data_root = os.path.expanduser('~/acdc_challenge/database/training')
-test_data_root = os.path.expanduser('~/acdc_challenge/database/testing')
-local_hostnames = ['localhost', 'jovyan']  # Add your container's hostname if needed
 
-##################################################################################
-# ...
-```
-
-*   **`project_root`**: Must point to the `acdc_segmenter` folder itself.
-*   **`data_root`**: Must point to the `training` folder inside your data directory.
-*   **`test_data_root`**: Must point to the `testing` folder inside your data directory.
-
-### 2. Configure Your Experiment (The Config File)
-
-The file `unet2D_bn_xent.py` acts as the "control panel" for your experiment. You can duplicate this file to create different experiments. Inside this file, you can tweak various hyperparameters and swap out core components of the training pipeline.
-
-*   **Adjusting Hyperparameters:** You can directly change values like `learning_rate = 0.01` to `0.001`, change `loss_type = 'crossentropy'` to `'dice'`, or toggle data augmentations like `do_rotations = True`.
-*   **Swapping the Network Architecture:** The config file defines the model via `model_handle = model_zoo.unet2D_bn`.
-    *   *How to find other models:* Open the `model_zoo.py` file. Look at the functions defined inside (e.g., `unet2D`, `unet3D`). You can change your config to use any of these by updating the handle (e.g., `model_handle = model_zoo.unet2D`).
-*   **Swapping the Optimizer:** The config file defines the optimizer via `optimizer_handle = tf.train.AdamOptimizer`.
-    *   *How to find other optimizers:* Because we are using the TF1 compatibility bridge, you can swap this with other standard TF1 optimizers like `tf.train.GradientDescentOptimizer` or `tf.train.RMSPropOptimizer`.
 
 ---
 
@@ -239,7 +170,7 @@ To prevent the training from aborting when you close your laptop or lose connect
 **Start a background session:**
 
 ```bash
-tmux new-session -d -s acdc_training "python train.py --config unet2D_bn_xent.py
+tmux new-session -d -s acdc_training "python train.py --config unet2D_bn_xent.py; bash"
 
 ```
 
@@ -259,7 +190,7 @@ tmux attach -t acdc_training
 
 You can also redirect the output to a log file. First, modify the startup command:
 ```bash
-tmux new-session -d -s acdc_training "python train.py --config unet2D_bn_xent.py > training_output.log 2>&1
+tmux new-session -d -s acdc_training "python train.py --config unet2D_bn_xent.py > training_output.log 2>&1; bash"
 ```
 
 Then, from another terminal, you can monitor the output with `tail`:
@@ -299,7 +230,7 @@ pip install "setuptools<70.0.0"
 Open a **new** terminal (while your training runs in the background via tmux), activate your environment (`conda activate acdc-tf2`), and start TensorBoard:
 
 ```bash
-tensorboard --logdir ~/Deep_learning_project/acdc_challenge/acdc_logdir/unet2D_bn_xent --bind_all
+tensorboard --logdir ~/Deep_learning_project/acdc_challenge/acdc_logdir --bind_all
 
 ```
 
