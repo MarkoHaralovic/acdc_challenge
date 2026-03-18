@@ -5,7 +5,7 @@
 #SBATCH --mem=20G
 #SBATCH --cpus-per-task=8
 #SBATCH --time=240:00:00
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:turing:1
 #SBATCH --output /home/s3758869/acdc_challenge/slurm_outputs/2dunet_cross_entropy_loss_baseline_training%J.log
 
 nvidia-smi
@@ -26,6 +26,7 @@ python -c "import tensorflow as tf; print('TensorFlow version:', tf.__version__)
 cd /home/s3758869/acdc_challenge/acdc_segmenter
 python train.py \
   --config unet2D_bn_xent.py \
-  --log-dir /home/s3758869/acdc_challenge/acdc_segmenter/acdc_logdir/unet2d_cross_entropy_loss_baseline_training
+  --log-dir /home/s3758869/acdc_challenge/acdc_segmenter/acdc_logdir/proba
+  # --log-dir /home/s3758869/acdc_challenge/acdc_segmenter/acdc_logdir/unet2d_cross_entropy_loss_baseline_training
 
-python evaluate acdc_logdir/unet2d_cross_entropy_loss_baseline_training
+# python evaluate acdc_logdir/TESTING_UNET2D_CE

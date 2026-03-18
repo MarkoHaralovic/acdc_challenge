@@ -39,8 +39,7 @@ def loss(logits, labels, nlabels, loss_type, weight_decay=0.0):
         )
 
     if loss_type == 'weighted_crossentropy':
-        segmentation_loss = losses.pixel_wise_cross_entropy_loss_weighted(logits, labels,
-                                                                          class_weights=[0.1, 0.3, 0.3, 0.3])
+        segmentation_loss = losses.pixel_wise_cross_entropy_loss_weighted(logits, labels,class_weights=[0.1, 0.3, 0.3, 0.3])
     elif loss_type == 'crossentropy':
         segmentation_loss = losses.pixel_wise_cross_entropy_loss(logits, labels)
     elif loss_type == 'dice':
@@ -49,9 +48,12 @@ def loss(logits, labels, nlabels, loss_type, weight_decay=0.0):
         segmentation_loss = losses.dice_loss(logits, labels, only_foreground=True)
     elif loss_type == 'crossentropy_and_dice':
         segmentation_loss = losses.pixel_wise_cross_entropy_loss(logits, labels) + 0.2*losses.dice_loss(logits, labels)
+    # elif loss_type == 'focal':
+    #     segmentation_loss = losses.focal_loss(logits, labels, alpha = [0.1, 0.3, 0.3, 0.3], gamma=2.0)
+    # elif loss_type == 'crossentropy_boundary_aware':
+    #     segmentation_loss = losses.boundary_aware_cross_entropy_loss(logits,labels,nlabels,class_weights=[0.1, 0.3, 0.3, 0.3], boundary_weight=0.4)
     else:
         raise ValueError('Unknown loss: %s' % loss_type)
-
 
     total_loss = tf.add(segmentation_loss, weights_norm)
 
