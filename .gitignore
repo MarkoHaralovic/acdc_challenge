@@ -1,3 +1,12 @@
+# Ignores dataset
+ACDC.zip
+ACDC/
+ACDC_kopie/
+*.nii.gz
+*.npy
+*.zip
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

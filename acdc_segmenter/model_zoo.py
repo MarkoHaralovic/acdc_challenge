@@ -2,7 +2,10 @@
 # Christian F. Baumgartner (c.f.baumgartner@gmail.com)
 # Lisa M. Koch (lisa.margret.koch@gmail.com)
 
-import tensorflow as tf
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 from tfwrapper import layers
 
 
@@ -561,5 +564,91 @@ def unet3D_bn_modified(images, training, nlabels):
     conv8_2 = layers.conv3D_layer_bn(conv8_1, 'conv8_2', num_filters=64, kernel_size=(3,3,3), training=training, padding='VALID')
 
     pred = layers.conv3D_layer_bn(conv8_2, 'pred', num_filters=nlabels, kernel_size=(1,1,1), activation=tf.identity, training=training, padding='VALID')
+
+    return pred
+
+
+def unet3plus_bn(images, training, nlabels):
+    """
+    U-Net 3+ architectuur met full-scale skip connections.
+    Robuuste versie voor TensorFlow compat.v1 / ACDC setup.
+    """
+
+    # --- ENCODER ---
+    e1 = layers.conv2D_layer_bn(images, 'e1_1', num_filters=64, training=training, padding='SAME')
+    e1 = layers.conv2D_layer_bn(e1, 'e1_2', num_filters=64, training=training, padding='SAME')
+    p1 = layers.max_pool_layer2d(e1)
+
+    e2 = layers.conv2D_layer_bn(p1, 'e2_1', num_filters=128, training=training, padding='SAME')
+    e2 = layers.conv2D_layer_bn(e2, 'e2_2', num_filters=128, training=training, padding='SAME')
+    p2 = layers.max_pool_layer2d(e2)
+
+    e3 = layers.conv2D_layer_bn(p2, 'e3_1', num_filters=256, training=training, padding='SAME')
+    e3 = layers.conv2D_layer_bn(e3, 'e3_2', num_filters=256, training=training, padding='SAME')
+    p3 = layers.max_pool_layer2d(e3)
+
+    e4 = layers.conv2D_layer_bn(p3, 'e4_1', num_filters=512, training=training, padding='SAME')
+    e4 = layers.conv2D_layer_bn(e4, 'e4_2', num_filters=512, training=training, padding='SAME')
+    p4 = layers.max_pool_layer2d(e4)
+
+    e5 = layers.conv2D_layer_bn(p4, 'e5_1', num_filters=1024, training=training, padding='SAME')
+    e5 = layers.conv2D_layer_bn(e5, 'e5_2', num_filters=1024, training=training, padding='SAME')
+
+    # --- FULL-SCALE AGGREGATIE ---
+    def aggregate_block(name, target_ref, streams):
+        processed_streams = []
+
+        target_h = target_ref.get_shape().as_list()[1]
+        target_w = target_ref.get_shape().as_list()[2]
+
+        for i, s in enumerate(streams):
+            current_h = s.get_shape().as_list()[1]
+            current_w = s.get_shape().as_list()[2]
+
+            if current_h != target_h or current_w != target_w:
+                x = tf.compat.v1.image.resize_bilinear(
+                    s,
+                    size=[target_h, target_w],
+                    align_corners=False,
+                    name=name + '_resize_' + str(i)
+                )
+            else:
+                x = s
+
+            x = layers.conv2D_layer_bn(
+                x,
+                name + '_st' + str(i) + '_red',
+                num_filters=64,
+                training=training,
+                padding='SAME'
+            )
+            processed_streams.append(x)
+
+        concat = tf.concat(processed_streams, axis=3, name=name + '_concat')
+
+        return layers.conv2D_layer_bn(
+            concat,
+            name + '_fusion',
+            num_filters=320,
+            training=training,
+            padding='SAME'
+        )
+
+    # --- DECODER ---
+    d4 = aggregate_block('d4', e4, [e1, e2, e3, e4, e5])
+    d3 = aggregate_block('d3', e3, [e1, e2, e3, d4, e5])
+    d2 = aggregate_block('d2', e2, [e1, e2, d3, d4, e5])
+    d1 = aggregate_block('d1', e1, [e1, d2, d3, d4, e5])
+
+    # --- OUTPUT ---
+    pred = layers.conv2D_layer_bn(
+        d1,
+        'pred',
+        num_filters=nlabels,
+        kernel_size=(1, 1),
+        activation=tf.identity,
+        training=training,
+        padding='SAME'
+    )
 
     return pred

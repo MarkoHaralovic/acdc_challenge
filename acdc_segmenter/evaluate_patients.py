@@ -11,7 +11,10 @@ import argparse
 import metrics_acdc
 import time
 from importlib.machinery import SourceFileLoader
-import tensorflow as tf
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
 from skimage import transform
 
 import config.system as sys_config

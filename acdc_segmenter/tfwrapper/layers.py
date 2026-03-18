@@ -2,13 +2,23 @@
 # Christian F. Baumgartner (c.f.baumgartner@gmail.com)
 # Lisa M. Koch (lisa.margret.koch@gmail.com)
 
-import tensorflow as tf
-import numpy as np
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
+import numpy as np
 from tfwrapper import utils
 
-from tensorflow.contrib.layers import variance_scaling_initializer, xavier_initializer
+# --- Fix voor de TF1 -> TF2 Keras initializers ---
+def variance_scaling_initializer(uniform=False, factor=2.0, mode='FAN_IN', dtype=tf.float32):
+    distribution = 'uniform' if uniform else 'truncated_normal'
+    return tf.keras.initializers.VarianceScaling(scale=factor, mode=mode.lower(), distribution=distribution)
 
+def xavier_initializer(uniform=True, dtype=tf.float32):
+    if uniform:
+        return tf.keras.initializers.GlorotUniform()
+    else:
+        return tf.keras.initializers.GlorotNormal()
+# -------------------------------------------------
 
 def max_pool_layer2d(x, kernel_size=(2, 2), strides=(2, 2), padding="SAME"):
     '''
@@ -122,62 +132,14 @@ def batch_normalisation_layer(bottom, name, training):
     :param training: A tf.bool specifying if the layer is executed at training or testing time
     :return: Batch normalised activation
     '''
-
-    h_bn = tf.contrib.layers.batch_norm(inputs=bottom, decay=0.99, epsilon=1e-3, is_training=training,
-                                        scope=name, center=True, scale=True)
+    
+    # TF2 Compat fix: tf.contrib bestaat niet meer, we gebruiken tf.compat.v1.layers.batch_normalization
+    h_bn = tf.compat.v1.layers.batch_normalization(inputs=bottom, momentum=0.99, epsilon=1e-3, training=training,
+                                                   name=name, center=True, scale=True)
 
     return h_bn
 
-#
-# def batch_normalisation_layer(bottom, name, training, moving_average_decay=0.99, epsilon=1e-3):
-#     '''
-#     Batch normalisation layer (Adapted from https://github.com/tensorflow/tensorflow/issues/1122)
-#     :param bottom: Input layer (should be before activation)
-#     :param name: A name for the computational graph
-#     :param training: A tf.bool specifying if the layer is executed at training or testing time
-#     :return: Batch normalised activation
-#     '''
-#
-#     with tf.variable_scope(name):
-#
-#         n_out = bottom.get_shape().as_list()[-1]
-#         tensor_dim = len(bottom.get_shape().as_list())
-#
-#         if tensor_dim == 2:
-#             # must be a dense layer
-#             moments_over_axes = [0]
-#         elif tensor_dim == 4:
-#             # must be a 2D conv layer
-#             moments_over_axes = [0, 1, 2]
-#         elif tensor_dim == 5:
-#             # must be a 3D conv layer
-#             moments_over_axes = [0, 1, 2, 3]
-#         else:
-#             # is not likely to be something reasonable
-#             raise ValueError('Tensor dim %d is not supported by this batch_norm layer' % tensor_dim)
-#
-#         init_beta = tf.constant(0.0, shape=[n_out], dtype=tf.float32)
-#         init_gamma = tf.constant(1.0, shape=[n_out], dtype=tf.float32)
-#         beta = tf.get_variable(name='beta', dtype=tf.float32, initializer=init_beta, regularizer=None,
-#                                trainable=True)
-#         gamma = tf.get_variable(name='gamma', dtype=tf.float32, initializer=init_gamma, regularizer=None,
-#                                 trainable=True)
-#
-#         batch_mean, batch_var = tf.nn.moments(bottom, moments_over_axes, name='moments')
-#         ema = tf.train.ExponentialMovingAverage(decay=moving_average_decay)
-#
-#         def mean_var_with_update():
-#             ema_apply_op = ema.apply([batch_mean, batch_var])
-#             with tf.control_dependencies([ema_apply_op]):
-#                 return tf.identity(batch_mean), tf.identity(batch_var)
-#
-#         mean, var = tf.cond(training, mean_var_with_update,
-#                             lambda: (ema.average(batch_mean), ema.average(batch_var)))
-#         normalised = tf.nn.batch_normalization(bottom, mean, var, beta, gamma, epsilon)
-#
-#         return normalised
-
-### FEED_FORWARD LAYERS ##############################################################################
+# ## FEED_FORWARD LAYERS ##############################################################################
 
 def conv2D_layer(bottom,
                  name,
@@ -428,7 +390,7 @@ def dense_layer(bottom,
         return op
 
 
-### BATCH_NORM SHORTCUTS #####################################################################################
+# ## BATCH_NORM SHORTCUTS #####################################################################################
 
 def conv2D_layer_bn(bottom,
                     name,
@@ -611,7 +573,7 @@ def dense_layer_bn(bottom,
 
     return act
 
-### VARIABLE INITIALISERS ####################################################################################
+# ## VARIABLE INITIALISERS ####################################################################################
 
 def get_weight_variable(shape, name=None, type='xavier_uniform', regularize=True, **kwargs):
 

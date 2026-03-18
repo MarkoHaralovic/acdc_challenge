@@ -2,10 +2,35 @@
 # Christian F. Baumgartner (c.f.baumgartner@gmail.com)
 # Lisa M. Koch (lisa.margret.koch@gmail.com)
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
+
 from tfwrapper import losses
 
-import tensorflow.examples.tutorials.mnist
+#import tensorflow.examples.tutorials.mnist
+
+
+def focal_loss_fn(labels, logits, gamma=2.0, alpha=0.25):
+    """
+    Wiskundige implementatie van Focal Loss voor multi-class segmentatie.
+    FL = -alpha * (1 - p_t)^gamma * log(p_t)
+    """
+    epsilon = 1e-9
+    # Zet logits om naar kansen via softmax
+    y_pred = tf.nn.softmax(logits, axis=-1)
+    y_pred = tf.clip_by_value(y_pred, epsilon, 1. - epsilon)
+    
+    # Bereken de Cross Entropy component
+    cross_entropy = -labels * tf.log(y_pred)
+    
+    # Voeg de Focal factor toe: (1 - p)^gamma
+    # Dit dwingt het model om te focussen op 'harde' pixels
+    weight = tf.pow(1. - y_pred, gamma)
+    loss = alpha * weight * cross_entropy
+    
+    # Gemiddelde over alle pixels en klassen
+    return tf.reduce_mean(tf.reduce_sum(loss, axis=-1))
 
 
 def inference(images, exp_config, training):
@@ -47,6 +72,13 @@ def loss(logits, labels, nlabels, loss_type, weight_decay=0.0):
         segmentation_loss = losses.dice_loss(logits, labels, only_foreground=False)
     elif loss_type == 'dice_onlyfg':
         segmentation_loss = losses.dice_loss(logits, labels, only_foreground=True)
+    elif loss_type == 'dice_focal':
+        # Dice zorgt voor geometrische overlap
+        dice = losses.dice_loss(logits, labels, only_foreground=True)
+        # Focal zorgt voor pixel-nauwkeurigheid op de randen
+        focal = focal_loss_fn(labels, logits, gamma=2.0, alpha=0.25)
+        # Combineer beide (0.5/0.5 weging is de standaard SOTA aanpak)
+        segmentation_loss = 0.5 * dice + 0.5 * focal
     elif loss_type == 'crossentropy_and_dice':
         segmentation_loss = losses.pixel_wise_cross_entropy_loss(logits, labels) + 0.2*losses.dice_loss(logits, labels)
     else:
