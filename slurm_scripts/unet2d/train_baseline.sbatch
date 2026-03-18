@@ -5,7 +5,7 @@
 #SBATCH --mem=20G
 #SBATCH --cpus-per-task=8
 #SBATCH --time=240:00:00
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:turing:1
 #SBATCH --output /home/s3758869/acdc_challenge/slurm_outputs/2dunet_cross_entropy_loss_baseline_training%J.log
 
 nvidia-smi
@@ -23,7 +23,6 @@ conda activate acdc_py37
 cd /home/s3758869/acdc_challenge/acdc_segmenter
 python train.py \
   --config unet2D_bn_xent.py \
-  --log-dir /home/s3758869/acdc_challenge/acdc_segmenter/acdc_logdir/testing_baseline
-  # --log-dir /home/s3758869/acdc_challenge/acdc_segmenter/acdc_logdir/unet2d_cross_entropy_loss_baseline_training
+  --log-dir /home/s3758869/acdc_challenge/acdc_segmenter/acdc_logdir/unet2d_cross_entropy_loss_baseline_training
 
 python evaluate_patients.py acdc_logdir/unet2d_cross_entropy_loss_baseline_training

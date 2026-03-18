@@ -114,3 +114,24 @@ def get_boundary_map(label_batch, nlabels):
         boundary_batch[b] = boundary.astype(np.uint8)
 
     return boundary_batch
+
+
+def compute_boundary_map(label_tensor, n_labels):
+    '''
+    TensorFlow-compatible wrapper around get_boundary_map.
+    Accepts a TF tensor of integer labels shaped [B, H, W] and returns a
+    [B, H, W] float32 binary boundary map as a TF tensor.
+
+    :param label_tensor: tf.Tensor of shape [B, H, W], dtype int64 (e.g. output of tf.argmax)
+    :param n_labels: number of label classes (int)
+    :return: tf.Tensor of shape [B, H, W], dtype float32, values in {0, 1}
+    '''
+    import tensorflow as tf
+
+    def _compute(label_np):
+        bmap = get_boundary_map(label_np.astype(np.int64), nlabels=n_labels)
+        return bmap.astype(np.float32)
+
+    boundary = tf.py_func(_compute, [label_tensor], tf.float32)
+    boundary.set_shape(label_tensor.get_shape())
+    return boundary
