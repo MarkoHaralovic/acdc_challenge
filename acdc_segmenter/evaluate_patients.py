@@ -342,15 +342,21 @@ if __name__ == '__main__':
         description="Script to evaluate a neural network model on the ACDC challenge data")
     parser.add_argument("EXP_PATH", type=str, help="Path to experiment folder (assuming you are in the working directory)")
     parser.add_argument('-t', '--evaluate_test_set', action='store_true')
+    parser.add_argument('--test_gt_exists', action='store_true',
+                        help='Use this with --evaluate_test_set when testing labels (*_gt.nii.gz) are available.')
     parser.add_argument('-a', '--evaluate_all', action='store_true')
     parser.add_argument('-i', '--iter', type=int, help='which iteration to use')
     args = parser.parse_args()
 
     evaluate_test_set = args.evaluate_test_set
+    test_gt_exists = args.test_gt_exists
     evaluate_all = args.evaluate_all
 
     if evaluate_test_set and evaluate_all:
         raise ValueError('evaluate_all and evaluate_test_set cannot be chosen together!')
+
+    if test_gt_exists and not evaluate_test_set:
+        raise ValueError('--test_gt_exists can only be used with --evaluate_test_set')
 
     use_iter = args.iter
     if use_iter:
@@ -381,7 +387,9 @@ if __name__ == '__main__':
     utils.makefolder(path_pred)
     utils.makefolder(path_image)
 
-    if not evaluate_test_set:
+    gt_exists = (not evaluate_test_set) or test_gt_exists
+
+    if gt_exists:
         path_gt = os.path.join(output_path, 'ground_truth')
         path_diff = os.path.join(output_path, 'difference')
         path_eval = os.path.join(output_path, 'eval')
@@ -395,12 +403,12 @@ if __name__ == '__main__':
                                 model_path,
                                 exp_config=exp_config,
                                 do_postprocessing=True,
-                                gt_exists=(not evaluate_test_set),
+                                gt_exists=gt_exists,
                                 evaluate_all=evaluate_all,
                                 use_iter=use_iter)
 
 
-    if not evaluate_test_set:
+    if gt_exists:
         metrics_acdc.main(path_gt, path_pred, path_eval)
 
 

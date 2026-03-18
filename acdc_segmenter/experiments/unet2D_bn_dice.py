@@ -1,7 +1,7 @@
 import model_zoo
 import tensorflow as tf
 
-experiment_name = 'unet2D_bn_wxent'
+experiment_name = 'unet2D_bn_dice'
 
 # Model settings
 model_handle = model_zoo.unet2D_bn
@@ -20,7 +20,7 @@ schedule_lr = False
 warmup_training = True
 weight_decay = 0.00000
 momentum = None
-loss_type = 'weighted_crossentropy'  # crossentropy/weighted_crossentropy/dice/dice_onlyfg/focal/crossentropy_boundary_aware
+loss_type = 'dice'  # crossentropy/weighted_crossentropy/dice/dice_onlyfg/focal/crossentropy_boundary_aware
 
 # Augmentation settings
 augment_batch = False

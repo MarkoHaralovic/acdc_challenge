@@ -16,12 +16,11 @@ def inference(images, exp_config, training):
     return exp_config.model_handle(images, training, nlabels=exp_config.nlabels)
 
 
-def loss(logits, labels, nlabels, loss_type, weight_decay=0.0, boundary_maps=None):
+def loss(logits, labels, nlabels, loss_type, weight_decay=0.0):
     '''
     Loss to be minimised by the neural network
     :param logits: The output of the neural network before the softmax
     :param labels: The ground truth labels in standard (i.e. not one-hot) format
-    :param boundary_maps: Boundary maps for boundary-aware loss
     :param nlabels: The number of GT labels
     :param loss_type: Can be 'weighted_crossentropy'/'crossentropy'/'dice'/'dice_onlyfg'/'crossentropy_and_dice'
     :param weight_decay: The weight for the L2 regularisation of the network paramters
@@ -40,8 +39,7 @@ def loss(logits, labels, nlabels, loss_type, weight_decay=0.0, boundary_maps=Non
         )
 
     if loss_type == 'weighted_crossentropy':
-        segmentation_loss = losses.pixel_wise_cross_entropy_loss_weighted(logits, labels,
-                                                                          class_weights=[0.1, 0.3, 0.3, 0.3])
+        segmentation_loss = losses.pixel_wise_cross_entropy_loss_weighted(logits, labels, class_weights=[0.1, 0.3, 0.3, 0.3])
     elif loss_type == 'crossentropy':
         segmentation_loss = losses.pixel_wise_cross_entropy_loss(logits, labels)
     elif loss_type == 'dice':
@@ -53,9 +51,7 @@ def loss(logits, labels, nlabels, loss_type, weight_decay=0.0, boundary_maps=Non
     elif loss_type == 'focal':
         segmentation_loss = losses.focal_loss(logits, labels, alpha = [0.1, 0.3, 0.3, 0.3], gamma=2.0)
     elif loss_type == 'crossentropy_boundary_aware':
-        if boundary_maps is None:
-            raise ValueError('boundary_maps must be provided for crossentropy_boundary_aware')
-        segmentation_loss = losses.cross_entropy_boundary_aware_loss(logits,labels,boundary_maps,class_weights=[0.1, 0.3, 0.3, 0.3])
+        segmentation_loss = losses.cross_entropy_boundary_aware_loss(logits,labels,nlabels,class_weights=[0.1, 0.3, 0.3, 0.3], boundary_weight=0.4)
     else:
         raise ValueError('Unknown loss: %s' % loss_type)
 
@@ -97,6 +93,7 @@ def training_step(loss, optimizer_handle, learning_rate, **kwargs):
     else:
         optimizer = optimizer_handle(learning_rate=learning_rate)
 
+
     # The with statement is needed to make sure the tf contrib version of batch norm properly performs its updates
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
@@ -105,7 +102,7 @@ def training_step(loss, optimizer_handle, learning_rate, **kwargs):
     return train_op
 
 
-def evaluation(logits, labels,  images, nlabels, loss_type,boundary_maps=None):
+def evaluation(logits, labels,  images, nlabels, loss_type):
     '''
     A function for evaluating the performance of the netwrok on a minibatch. This function returns the loss and the 
     current foreground Dice score, and also writes example segmentations and imges to to tensorboard.
@@ -114,7 +111,6 @@ def evaluation(logits, labels,  images, nlabels, loss_type,boundary_maps=None):
     :param images: Input image mini batch
     :param nlabels: Number of labels in the dataset
     :param loss_type: Which loss should be evaluated
-    :param boundary_maps: Boundary maps for boundary-aware loss
     :return: The loss without weight decay, the foreground dice of a minibatch
     '''
 
@@ -125,7 +121,7 @@ def evaluation(logits, labels,  images, nlabels, loss_type,boundary_maps=None):
     tf.summary.image('example_pred', prepare_tensor_for_summary(mask, mode='mask', nlabels=nlabels))
     tf.summary.image('example_zimg', prepare_tensor_for_summary(images, mode='image'))
 
-    total_loss, nowd_loss, weights_norm = loss(logits, labels, boundary_maps=boundary_maps, nlabels=nlabels, loss_type=loss_type)
+    total_loss, nowd_loss, weights_norm = loss(logits, labels, nlabels=nlabels, loss_type=loss_type)
 
     cdice_structures = losses.per_structure_dice(logits, tf.one_hot(labels, depth=nlabels))
     cdice_foreground = cdice_structures[:,1:]

@@ -20,12 +20,10 @@ export https_proxy="http://proxy.utwente.nl:3128"
 eval "$(/home/s3758869/miniconda3/bin/conda shell.bash hook)"
 conda activate acdc_py37
 
-which python
-python -c "import tensorflow as tf; print('TensorFlow version:', tf.__version__)"
-
 cd /home/s3758869/acdc_challenge/acdc_segmenter
 python train.py \
   --config unet2D_bn_xent.py \
-  --log-dir /home/s3758869/acdc_challenge/acdc_segmenter/acdc_logdir/unet2d_cross_entropy_loss_baseline_training
+  --log-dir /home/s3758869/acdc_challenge/acdc_segmenter/acdc_logdir/testing_baseline
+  # --log-dir /home/s3758869/acdc_challenge/acdc_segmenter/acdc_logdir/unet2d_cross_entropy_loss_baseline_training
 
-python evaluate acdc_logdir/unet2d_cross_entropy_loss_baseline_training
+python evaluate_patients.py acdc_logdir/unet2d_cross_entropy_loss_baseline_training

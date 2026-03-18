@@ -1,7 +1,7 @@
 import model_zoo
 import tensorflow as tf
 
-experiment_name = 'unet2D_bn_wxent'
+experiment_name = 'unet2D_bn_focal'
 
 # Model settings
 model_handle = model_zoo.unet2D_bn
@@ -14,13 +14,13 @@ nlabels = 4
 
 # Training settings
 batch_size = 10
-learning_rate = 0.01
+learning_rate = 0.001
 optimizer_handle = tf.train.AdamOptimizer
 schedule_lr = False
 warmup_training = True
 weight_decay = 0.00000
 momentum = None
-loss_type = 'weighted_crossentropy'  # crossentropy/weighted_crossentropy/dice/dice_onlyfg
+loss_type = 'focal'  # crossentropy/weighted_crossentropy/dice/dice_onlyfg/focal/crossentropy_boundary_aware
 
 # Augmentation settings
 augment_batch = False
