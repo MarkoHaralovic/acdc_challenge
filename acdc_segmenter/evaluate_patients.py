@@ -43,7 +43,9 @@ def score_data(input_folder, output_folder, model_path, exp_config, do_postproce
 
     evaluate_test_set = not gt_exists
 
-    with tf.Session() as sess:
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    with tf.Session(config=config) as sess:
 
         sess.run(init)
 

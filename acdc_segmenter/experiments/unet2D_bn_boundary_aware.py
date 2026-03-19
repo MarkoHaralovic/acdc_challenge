@@ -13,8 +13,8 @@ target_resolution = (1.36719, 1.36719)
 nlabels = 4
 
 # Training settings
-batch_size = 10
-learning_rate = 0.001
+batch_size = 16
+learning_rate = 0.01
 optimizer_handle = tf.train.AdamOptimizer
 schedule_lr = False
 warmup_training = True

@@ -10,7 +10,7 @@
 
 nvidia-smi
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_DEVICE_ORDER=PCI_BUS_ID
 
 export HTTP_PROXY="http://proxy.utwente.nl:3128"
 export HTTPS_PROXY="http://proxy.utwente.nl:3128"
@@ -21,4 +21,4 @@ eval "$(/home/s3758869/miniconda3/bin/conda shell.bash hook)"
 conda activate acdc_py37
 
 cd /home/s3758869/acdc_challenge/acdc_segmenter
-python evaluate_patients.py acdc_logdir/unet2d_cross_entropy_loss_baseline_training
+python evaluate_patients.py acdc_logdir/unet2d_cross_entropy_loss_baseline_training_BEST_RUN

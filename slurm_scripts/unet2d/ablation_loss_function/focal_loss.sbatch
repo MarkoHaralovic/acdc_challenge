@@ -10,7 +10,7 @@
 
 nvidia-smi
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_DEVICE_ORDER=PCI_BUS_ID
 
 export HTTP_PROXY="http://proxy.utwente.nl:3128"
 export HTTPS_PROXY="http://proxy.utwente.nl:3128"
