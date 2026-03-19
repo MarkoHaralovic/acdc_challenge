@@ -11,6 +11,7 @@
 nvidia-smi
 
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
+export TF_FORCE_GPU_ALLOW_GROWTH=true
 
 export HTTP_PROXY="http://proxy.utwente.nl:3128"
 export HTTPS_PROXY="http://proxy.utwente.nl:3128"

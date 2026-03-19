@@ -13,14 +13,14 @@ target_resolution = (1.36719, 1.36719)
 nlabels = 4
 
 # Training settings
-batch_size = 10
+batch_size = 4
 learning_rate = 0.001
 optimizer_handle = tf.train.AdamOptimizer
 schedule_lr = False
 warmup_training = True
 weight_decay = 0.00000
 momentum = None
-loss_type = 'dice'  # crossentropy/weighted_crossentropy/dice/dice_onlyfg/focal/crossentropy_boundary_aware
+loss_type = 'dice_onlyfg'  # crossentropy/weighted_crossentropy/dice/dice_onlyfg/focal/crossentropy_boundary_aware
 
 # Augmentation settings
 augment_batch = False
